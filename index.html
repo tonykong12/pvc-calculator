@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#3498db">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PVC计算器">
+<title>PVC管材价格计算器</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+  :root {
+    --primary: #3498db;
+    --primary-dark: #2980b9;
+    --green: #27ae60;
+    --green-dark: #1e8449;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #2c3e50;
+    --text-light: #7f8c8d;
+    --border: #dce1e8;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+  }
+
+  /* 顶部 */
+  .header {
+    background: linear-gradient(135deg, #2c3e50 0%, var(--primary) 100%);
+    color: #fff;
+    padding: 20px 20px 18px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .header p { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+
+  .main { padding: 16px; max-width: 500px; margin: 0 auto; }
+
+  /* 公式提示 */
+  .formula-tip {
+    background: #eaf2fb;
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #2c5f8a;
+    line-height: 1.8;
+  }
+  .formula-tip strong { font-size: 13px; display: block; margin-bottom: 4px; color: #1a4a75; }
+  .formula-tip code {
+    background: #d4e7f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 11px;
+  }
+
+  /* 输入卡片 */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-title .dot {
+    width: 6px; height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* 输入行 */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-row:last-child { margin-bottom: 0; }
+  .input-group { flex: 1; }
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .input-group input {
+    width: 100%;
+    height: 44px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 16px;
+    color: var(--text);
+    background: #fafbfd;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  .input-group input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(52,152,219,0.12);
+    background: #fff;
+  }
+  .input-group .unit { font-size: 10px; color: #bbb; margin-top: 3px; }
+
+  /* 按钮 */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin: 18px 0;
+  }
+  .btn {
+    flex: 1;
+    height: 48px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+    -webkit-touch-callout: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(52,152,219,0.3);
+  }
+  .btn-secondary {
+    background: #e8ecf1;
+    color: #555;
+  }
+  .btn-secondary:active { background: #d8dde5; }
+
+  /* 结果区 */
+  .result-area { display: none; }
+  .result-area.show { display: block; }
+
+  .price-card {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(39,174,96,0.12);
+  }
+  .price-card .label { font-size: 13px; color: #388e3c; }
+  .price-card .price { font-size: 38px; font-weight: 800; color: #1b5e20; line-height: 1.2; }
+  .price-card .unit { font-size: 13px; color: #388e3c; font-weight: 500; }
+
+  .steps-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    padding: 16px;
+  }
+  .steps-card h3 {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .step {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #555;
+    align-items: flex-start;
+  }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 24px; height: 24px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-body { flex: 1; line-height: 1.7; }
+  .step-body .name { font-weight: 600; color: var(--text); }
+  .step-body .formula { color: #e74c3c; font-family: "SF Mono","Menlo",monospace; font-size: 12px; word-break: break-all; }
+  .step-body .val { color: var(--text); font-weight: 600; }
+  .step-body .val b { color: var(--green-dark); }
+
+  /* 安装提示 */
+  .install-banner {
+    display: none;
+    background: var(--primary);
+    color: #fff;
+    padding: 10px 16px;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    position: sticky;
+    bottom: 0;
+    z-index: 200;
+  }
+  .install-banner:active { background: var(--primary-dark); }
+
+  /* 底部 */
+  .footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 11px;
+    color: #ccc;
+  }
+
+  /* 动画 */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .result-area.show .price-card  { animation: fadeUp 0.35s ease; }
+  .result-area.show .steps-card  { animation: fadeUp 0.45s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>PVC 管材价格计算器</h1>
+  <p>基于管壁截面积与原料密度计算每米价格</p>
+</div>
+
+<div class="main">
+  <div class="formula-tip">
+    <strong>📐 计算公式</strong>
+    ① 外径² & 内径² &nbsp; ② 每米重量 = <code>(外径²-内径²)×密度×0.82/1000</code><br>
+    ③ 公斤价 = <code>原料价×系数</code> &nbsp; ④ 每米价格 = <code>每米重量×公斤价</code>
+  </div>
+
+  <!-- 管材参数 -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>管材参数</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>内径</label>
+        <input type="number" id="innerDia" value="4" step="0.1" min="0" inputmode="decimal">
+        <div class="unit">mm</div>
+      </div>
+      <div class="input-group">
+        <label>外径</label>
+        <input type="number" id="outerDia" value="5" step="0.1" min="0" inputmode="decimal">
+        <div class="unit">mm</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>密度</label>
+        <input type="number" id="density" value="1.45" step="0.01" min="0.01" inputmode="decimal">
+        <div class="unit">g/cm³（PVC 约 1.35~1.55）</div>
+      </div>
+      <div class="input-group">
+        <label>换算系数</label>
+        <input type="number" id="factor" value="0.82" step="0.01" min="0.01" inputmode="decimal">
+        <div class="unit">经验系数，默认 0.82</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 价格参数 -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#27ae60"></span>价格参数</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>基础原料价</label>
+        <input type="number" id="rawPrice" value="15.5" step="0.1" min="0" inputmode="decimal">
+        <div class="unit">元/kg</div>
+      </div>
+      <div class="input-group">
+        <label>价格系数</label>
+        <input type="number" id="priceFactor" value="1.1" step="0.01" min="0.01" inputmode="decimal">
+        <div class="unit">含加工费/利润率</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="fillPreset()">预设示例</button>
+    <button class="btn btn-primary" onclick="calculate()">开始计算</button>
+  </div>
+
+  <!-- 结果区 -->
+  <div class="result-area" id="resultArea">
+    <div class="price-card">
+      <div class="label">每米价格</div>
+      <div class="price" id="finalPrice">0.00</div>
+      <div class="unit" id="finalUnit">元 / 米</div>
+    </div>
+    <div class="steps-card">
+      <h3>详细计算过程</h3>
+      <div id="stepsContainer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="install-banner" id="installBanner" onclick="installPWA()">
+  📲 点击此处安装到手机桌面
+</div>
+<div class="footer">PVC Tube Price Calculator v1.0 · PWA</div>
+
+<script>
+function formatNum(n, d) { return Number(n).toFixed(d); }
+
+/* 预设示例 */
+function fillPreset() {
+  document.getElementById('innerDia').value   = 4;
+  document.getElementById('outerDia').value   = 5;
+  document.getElementById('density').value     = 1.45;
+  document.getElementById('factor').value      = 0.82;
+  document.getElementById('rawPrice').value    = 15.5;
+  document.getElementById('priceFactor').value = 1.1;
+  document.getElementById('resultArea').classList.remove('show');
+}
+
+/* 主计算 */
+function calculate() {
+  const inner   = parseFloat(document.getElementById('innerDia').value);
+  const outer   = parseFloat(document.getElementById('outerDia').value);
+  const density = parseFloat(document.getElementById('density').value);
+  const factor  = parseFloat(document.getElementById('factor').value);
+  const rawP    = parseFloat(document.getElementById('rawPrice').value);
+  const pFactor = parseFloat(document.getElementById('priceFactor').value);
+
+  if ([inner, outer, density, factor, rawP, pFactor].some(isNaN)) {
+    shakeBtn(); return alert('请填写所有参数');
+  }
+  if (outer <= inner) { shakeBtn(); return alert('外径必须大于内径'); }
+  if ([inner, outer, density, factor, rawP, pFactor].some(v => v <= 0)) {
+    shakeBtn(); return alert('参数必须为正数');
+  }
+
+  const outerSq  = outer * outer;
+  const innerSq  = inner * inner;
+  const diffSq   = outerSq - innerSq;
+  const weightM  = diffSq * density * factor / 1000;
+  const kgPrice  = rawP * pFactor;
+  const meterPrice = weightM * kgPrice;
+
+  document.getElementById('finalPrice').textContent = formatNum(meterPrice, 4);
+  document.getElementById('finalUnit').textContent  = '元 / 米';
+
+  const steps = [
+    { label:'外径平方',   formula:`${outer}²`,                              result:formatNum(outerSq,2) },
+    { label:'内径平方',   formula:`${inner}²`,                              result:formatNum(innerSq,2) },
+    { label:'平方差',     formula:`${formatNum(outerSq,2)} - ${formatNum(innerSq,2)}`, result:formatNum(diffSq,2) },
+    { label:'每米重量',   formula:`${formatNum(diffSq,2)} × ${density} × ${factor} / 1000`, result:formatNum(weightM,6)+' kg/m' },
+    { label:'公斤价',     formula:`${rawP} × ${pFactor}`,                  result:formatNum(kgPrice,2)+' 元/kg' },
+    { label:'每米价格',   formula:`${formatNum(weightM,6)} × ${formatNum(kgPrice,2)}`, result:'<b>'+formatNum(meterPrice,6)+' 元/m</b>' },
+  ];
+
+  let html = '';
+  steps.forEach((s, i) => {
+    html += `<div class="step">
+      <div class="step-num">${i+1}</div>
+      <div class="step-body">
+        <span class="name">${s.label}</span><br>
+        <span class="formula">= ${s.formula}</span><br>
+        <span class="val">= ${s.result}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('stepsContainer').innerHTML = html;
+
+  const area = document.getElementById('resultArea');
+  area.classList.remove('show');
+  void area.offsetWidth;          // 强制重排以重新触发动画
+  area.classList.add('show');
+  area.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function shakeBtn() {
+  const btn = document.querySelector('.btn-primary');
+  btn.style.animation = 'none';
+  void btn.offsetWidth;
+  btn.style.animation = 'shake 0.4s';
+}
+
+// ===== PWA 注册 =====
+let deferredPrompt = null;
+const banner = document.getElementById('installBanner');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.style.display = 'block';
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; banner.style.display = 'none'; });
+}
+
+window.addEventListener('appinstalled', () => {
+  banner.style.display = 'none';
+  deferredPrompt = null;
+});
+
+// Service Worker 注册
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(() => console.log('SW registered'))
+      .catch(() => console.log('SW registration failed'));
+  });
+}
+</script>
+</body>
+</html>
